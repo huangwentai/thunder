@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+	<meta charset="UTF-8">
+	<title>雷电</title>
+	</head>
+   <script src="js/zepto.min.js"></script>
+<script>
+$(document).ready(function() {
+    var wid = $(window).width();
+    var hei = $(window).height();
+    var scaleTouch = 320 / wid;
+    var canvas = document.getElementById("canvas");
+    var ctx = canvas.getContext("2d"),
+    moveX = 0,
+    moveY = 0,
+    bgY = 0,
+    ship = [],
+    butime = 0,
+    bullet = [],
+    manyEnemyTime = 0,
+    score = 0,
+    enemyShip = [],
+    boom = [],
+    manyEnemy = [],
+    bulletSound = 0,
+    status = 0,
+    boomSound = 0;
+    ship[0] = 0;
+    ship[1] = 140;
+    ship[2] = 300;
+    bullet.push([153, 243]);
+    enemyShip.push([0, 84, 46]);
+    enemyShip.push([86, 57, 40]);
+    enemyShip.push([143, 63, 41]);
+    enemyShip.push([208, 49, 28]);
+    enemyShip.push([256, 67, 30]);
+    enemyShip.push([326, 58, 33]);
+    canvas.addEventListener("touchstart", touchstart, false);
+    canvas.addEventListener("touchmove", touchmove, false);
+    canvas.width = 320;
+    canvas.height = 576;
+
+    var bg = document.getElementById("bg");
+    var b01 = document.getElementById("ship01");
+    var bulletimg = document.getElementById("bulletimg");
+    var explosion = document.getElementById("explosion");
+    var Enemy = document.getElementById("Enemy");
+    var gameOver = document.getElementById("gameOver");
+
+    var bgMusic = document.getElementById("bgMusic");
+    bgMusic.loop = true;
+    bgMusic.autoplay = true;
+    bgMusic.load();
+    function touchstart(event) {
+        //阻止网页默认动作（即网页滚动）
+        event.preventDefault();
+        //if (spirit || !event.touches.length) return;
+        var touch = event.touches[0];
+        moveX = touch.pageX * scaleTouch;
+        moveY = touch.pageY * scaleTouch;
+    }
+
+    function touchmove(event) {
+        //阻止网页默认动作（即网页滚动）
+        event.preventDefault();
+        //if (spirit || !event.touches.length) return;
+        var touch = event.touches[0];
+        // var len=bullet.length-1;
+        //移动飞船
+        ship[1] = ship[1] + (touch.pageX * scaleTouch - moveX);
+        ship[2] = ship[2] + (touch.pageY * scaleTouch - moveY);
+        if (ship[1] < -30) {
+            ship[1] = -30;
+        }
+        if (ship[1] > 290) {
+            ship[1] = 290;
+        }
+        if (ship[2] < 0) {
+            ship[2] = 0;
+        }
+        if (ship[2] > hei * scaleTouch - 40) {
+            ship[2] = hei * scaleTouch - 40;
+        }
+
+        // bullet[len][0]=bullet[len][0]+(touch.pageX*scaleTouch-moveX);
+        // bullet[len][1]=bullet[len][1]+(touch.pageY*scaleTouch-moveY);
+        moveX = touch.pageX * scaleTouch;
+        moveY = touch.pageY * scaleTouch;
+
+    }
+
+    var startGame = setInterval(function() {
+        ctx.clearRect(0, 0, 320, 576);
+        //背景
+        ctx.drawImage(bg, 0, 0, 320, 576, 0, bgY, 320, 576);
+        ctx.drawImage(bg, 0, 0, 320, 576, 0, bgY - 576, 320, 576);
+        bgY++;
+        if (bgY > 575) {
+            bgY = 0;
+        }
+
+        //敌机
+        if (manyEnemyTime > 30 && status == 0) {
+            var random1 = Math.floor(Math.random() * 6);
+            var random2 = Math.floor(Math.random() * 260);
+            manyEnemy.push([enemyShip[random1][0], random2, -90, enemyShip[random1][1], enemyShip[random1][2]]);
+            manyEnemyTime = 0;
+        }
+        manyEnemyTime++;
+
+        $.each(manyEnemy,
+        function(n, value) {
+            ctx.drawImage(Enemy, manyEnemy[n][0], 0, manyEnemy[n][3], manyEnemy[n][4], manyEnemy[n][1], manyEnemy[n][2], manyEnemy[n][3], manyEnemy[n][4]);
+            if ((ship[1] > manyEnemy[n][1] && ship[1] < manyEnemy[n][1] + manyEnemy[n][3] && ship[2] > manyEnemy[n][2] && ship[2] < manyEnemy[n][2] + manyEnemy[n][4]) || (ship[1] + 60 > manyEnemy[n][1] && ship[1] + 60 < manyEnemy[n][1] + manyEnemy[n][3] && ship[2] > manyEnemy[n][2] && ship[2] < manyEnemy[n][2] + manyEnemy[n][4]) || (ship[1] > manyEnemy[n][1] && ship[1] < manyEnemy[n][1] + manyEnemy[n][3] && ship[2] + 45 > manyEnemy[n][2] && ship[2] + 45 < manyEnemy[n][2] + manyEnemy[n][4]) || (ship[1] + 60 > manyEnemy[n][1] && ship[1] + 60 < manyEnemy[n][1] + manyEnemy[n][3] && ship[2] + 45 > manyEnemy[n][2] && ship[2] + 45 < manyEnemy[n][2] + manyEnemy[n][4])) {
+                // clearInterval(startGame);//撞机
+                var shipDestroyEffect = document.getElementById("shipDestroyEffect");
+                bgMusic.pause();
+                shipDestroyEffect.play();
+                boom.push([ship[1] - 34, ship[2] - 32, 0, 0]);
+                ship.splice(0, 1);
+                status = 1;
+            }
+            manyEnemy[n][2] += 3;
+            if (manyEnemy[n][2] > 700) {
+                manyEnemy.splice(n, 1);
+                return false;
+            }
+            $.each(bullet,
+            function(m, value) {
+                if (((bullet[m][0] < manyEnemy[n][1] + manyEnemy[n][3] && bullet[m][0] > manyEnemy[n][1]) || (bullet[m][0] + 26 < manyEnemy[n][1] + manyEnemy[n][3] && bullet[m][0] + 26 > manyEnemy[n][1])) && bullet[m][1] > manyEnemy[n][2] && bullet[m][1] < manyEnemy[n][2] + manyEnemy[n][4]) {
+                    boom.push([manyEnemy[n][1] - (64 - (manyEnemy[n][3] / 2)), manyEnemy[n][2] - (64 - (manyEnemy[n][4] / 2)), 0, 0]);
+                    var explodeEffect = document.getElementById("explodeEffect" + boomSound);
+                    explodeEffect.currentTime = 0;
+                    explodeEffect.play();
+                    boomSound++;
+                    if (boomSound > 6) {
+                        boomSound = 0
+                    }
+                    score += 10;
+                    manyEnemy.splice(n, 1);
+                    bullet.splice(m, 1);
+                    return false;
+                }
+            })
+
+        })
+        //敌机爆炸
+        $.each(boom,
+        function(n, value) {
+
+            ctx.drawImage(explosion, boom[n][2] * 128, boom[n][3] * 128, 128, 128, boom[n][0], boom[n][1], 128, 128);
+            boom[n][2]++;
+            boom[n][0]++;
+            if (boom[n][2] > 7) {
+                boom[n][2] = 0;
+                boom[n][3]++;
+                if (boom[n][3] > 5) {
+                    boom.splice(n, 1);
+                }
+            }
+        })
+        //子弹
+        $.each(bullet,
+        function(n, value) {
+            ctx.drawImage(bulletimg, 0, 0, 10, 55, bullet[n][0], bullet[n][1], 10, 55);
+            ctx.drawImage(bulletimg, 0, 0, 10, 55, bullet[n][0] + 24, bullet[n][1], 10, 55);
+            bullet[n][1] -= 13;
+            if (bullet[n][1] < -55) {
+                bullet.splice(n, 1);
+            };
+        }) 
+        if (butime > 15 && status == 0) {
+            bullet.push([ship[1] + 13, ship[2] - 57]);
+            butime = 0;
+            var fireEffect = document.getElementById("fireEffect" + bulletSound);
+            fireEffect.currentTime = 0;
+            fireEffect.play();
+            bulletSound++;
+            if (bulletSound > 6) {
+                bulletSound = 0
+            }
+        };
+        butime++;
+
+        //飞机
+        if (ship[0] < 4) ctx.drawImage(ship01, 0, 0, 60, 45, ship[1], ship[2], 60, 45);
+
+        if (ship[0] > 3 && ship[0] < 8) ctx.drawImage(ship01, 60, 0, 60, 45, ship[1], ship[2], 60, 45);
+
+        if (ship[0] > 7) ctx.drawImage(ship01, 120, 0, 60, 45, ship[1], ship[2], 60, 45);
+
+        ship[0]++;
+        if (ship[0] > 11) ship[0] = 0;
+        //分数
+        ctx.font = 10 + "px Arial";
+        ctx.fillStyle = "#fff";
+        ctx.fillText("Score  " + score, 10, 20);
+        //游戏结束提示
+        if (status > 0 && status < 60) {
+            status++;
+        }
+        if (status > 50) {
+            ctx.drawImage(gameOver, 0, 0, 320, 85, 0, hei * scaleTouch / 2.5 - 42, 320, 85);
+        }
+
+    },
+    20);
+
+})
+</script>
+	<body>
+  <img id="bg" src="img/bg.jpg" style="display:none;">
+  <img id="bulletimg" src="img/bullet.png" style="display:none;">
+  <img id="ship01" src="img/ship01.png" style="display:none;">
+  <img id="explosion" src="img/explosion1.png" style="display:none;">
+  <img id="Enemy" src="img/Enemy.png" style="display:none;">
+  <img id="gameOver" src="img/gameOver.png" style="display:none;">
+  <!--子弹发射声音-->
+  <audio style="display:none;"  id="fireEffect0"><source src="fireEffect.mp3" type="audio/mpeg"></audio>
+  <audio style="display:none;"  id="fireEffect1"><source src="fireEffect.mp3" type="audio/mpeg"></audio>
+  <audio style="display:none;"  id="fireEffect2"><source src="fireEffect.mp3" type="audio/mpeg"></audio>
+  <audio style="display:none;"  id="fireEffect3"><source src="fireEffect.mp3" type="audio/mpeg"></audio>
+  <audio style="display:none;"  id="fireEffect4"><source src="fireEffect.mp3" type="audio/mpeg"></audio>
+  <audio style="display:none;"  id="fireEffect5"><source src="fireEffect.mp3" type="audio/mpeg"></audio>
+  <audio style="display:none;"  id="fireEffect6"><source src="fireEffect.mp3" type="audio/mpeg"></audio>
+  <!--子弹发射声音-->
+  <!--敌机爆炸声音-->
+<audio style="display:none;" id="explodeEffect0"><source src="explodeEffect.mp3" type="audio/mpeg"></audio>
+<audio style="display:none;" id="explodeEffect1"><source src="explodeEffect.mp3" type="audio/mpeg"></audio>
+<audio style="display:none;" id="explodeEffect2"><source src="explodeEffect.mp3" type="audio/mpeg"></audio>
+<audio style="display:none;" id="explodeEffect3"><source src="explodeEffect.mp3" type="audio/mpeg"></audio>
+<audio style="display:none;" id="explodeEffect4"><source src="explodeEffect.mp3" type="audio/mpeg"></audio>
+<audio style="display:none;" id="explodeEffect5"><source src="explodeEffect.mp3" type="audio/mpeg"></audio>
+<audio style="display:none;" id="explodeEffect6"><source src="explodeEffect.mp3" type="audio/mpeg"></audio>
+<!--敌机爆炸声音-->
+<!--我的战机爆炸-->
+  <audio style="display:none;" id="shipDestroyEffect"><source src="shipDestroyEffect.mp3" type="audio/mpeg"></audio>
+  <!--我的战机爆炸-->
+<!--背景音乐-->
+  <audio style="display:none;" id="bgMusic"><source src="bgMusic.mp3" type="audio/mpeg"></audio>
+  <!--背景音乐-->
+	<canvas id="canvas" ></canvas>
+</body>
+<style type="text/css">
+	html,body{padding:0;margin:0;width:100%;height:100%;overflow:hidden;}
+#canvas{background-color:#fff;display:block;width:100%;position:absolute;top:0;left:0;}
+</style>
+
+	
+</html>
